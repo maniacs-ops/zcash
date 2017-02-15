@@ -536,6 +536,7 @@ void CWallet::SyncMetaData(pair<typename TxSpendMap<T>::iterator, typename TxSpe
         const uint256& hash = it->second;
         CWalletTx* copyTo = &mapWallet[hash];
         if (copyFrom == copyTo) continue;
+        if (!copyFrom->IsEquivalentTo(*copyTo)) continue;
         copyTo->mapValue = copyFrom->mapValue;
         // mapNoteData not copied on purpose
         // (it is always set correctly for each CWalletTx)
@@ -2035,6 +2036,15 @@ bool CWalletTx::IsTrusted() const
             return false;
     }
     return true;
+}
+
+bool CWalletTx::IsEquivalentTo(const CWalletTx& tx) const
+{
+        CMutableTransaction tx1 = *this;
+        CMutableTransaction tx2 = tx;
+        for (unsigned int i = 0; i < tx1.vin.size(); i++) tx1.vin[i].scriptSig = CScript();
+        for (unsigned int i = 0; i < tx2.vin.size(); i++) tx2.vin[i].scriptSig = CScript();
+        return CTransaction(tx1) == CTransaction(tx2);
 }
 
 std::vector<uint256> CWallet::ResendWalletTransactionsBefore(int64_t nTime)
